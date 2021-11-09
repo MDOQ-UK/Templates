@@ -3,3 +3,4 @@
 /mdoq/nginx/generated/*
 /mdoq/nginx/includes/*
 /mdoq/var/*
+/mdoq-tmp
