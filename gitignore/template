@@ -2,3 +2,4 @@
 /mdoq/varnish/varnish.out.vcl
 /mdoq/nginx/generated/*
 /mdoq/nginx/includes/*
+/mdoq/var/*
