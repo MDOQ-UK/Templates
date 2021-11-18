@@ -4,3 +4,6 @@
 /mdoq/nginx/includes/*
 /mdoq/var/*
 /mdoq-tmp
+# magento upgrade directories
+/magento-product-*
+/app/code.disabled
