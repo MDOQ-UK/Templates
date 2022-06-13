@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# helper / setup bits
+ARGUMENT_COMPARISON_AHEAD=AHEAD
+ARGUMENT_COMPARISON_IDENTICAL=IDENTICAL
+ARGUMENT_COMPARISON_BEHIND=BEHIND
+
+ARGUMENT_STEP_BEFORE_COMPOSER=BEFORE_COMPOSER
+ARGUMENT_STEP_BEFORE_MAGENTO_COMMANDS=BEFORE_MAGENTO_COMMANDS
+ARGUMENT_STEP_BEFORE_DATA_MIGRATION=BEFORE_DATA_MIGRATION
+ARGUMENT_STEP_AFTER_DATA_MIGRATION=AFTER_DATA_MIGRATION
+ARGUMENT_STEP_BEFORE_COMMON_TOOLS=BEFORE_COMMON_TOOLS
+ARGUMENT_STEP_FINAL=FINAL
+
+INPUT="$1-$2"
+
+# helper  methods for instance type
+function isProductionInstance(){
+    if [[ ${MDOQ_INSTANCE_TYPE} == production_* ]]; then
+        return
+    fi
+    false
+}
+
+function isDevelopmentInstance(){
+    if [[ ${MDOQ_INSTANCE_TYPE} == "bug" ]]; then
+        return
+    fi
+    false
+}
+
+function isReleaseCandidateInstance(){
+    if [[ ${MDOQ_INSTANCE_TYPE} == "release_candidate" ]]; then
+        return
+    fi
+    false
+}
+
+# helper methods for branch state
+function isAhead(){
+    if [[ $2 == ${ARGUMENT_COMPARISON_AHEAD} ]]; then
+        return
+    fi
+    false
+}
+
+function isBehind(){
+    if [[ $2 == ${ARGUMENT_COMPARISON_BEHIND} ]]; then
+        return
+    fi
+    false
+}
+
+function isIdentical(){
+    if [[ $2 == ${ARGUMENT_COMPARISON_IDENTICAL} ]]; then
+        return
+    fi
+    false
+}
+
+# =====================================================================
+#    Configuration As Code Starts Here
+# =====================================================================
+
+echo -n "Running step ${1} for "
+if isProductionInstance; then
+    echo -n "production instance "
+elif isReleaseCandidateInstance; then
+    echo -n "release candidate instance "
+elif isDevelopmentInstance; then
+    echo -n "development instance "
+else
+    echo -n "unknown instance type "
+fi
+
+echo " with id ${MDOQ_INSTANCE_ID} on branch ${MDOQ_INSTANCE_TICKET_NUMBER} (this branch is ${2} when compared to the default branch)"
+
+# set variables to different values base on instance type
+if isProductionInstance; then
+    PAYMENT_METHOD_MODE=live
+    GOOGLE_ANALYTICS_ACCOUNT="live-account-id"
+    GOOGLE_ANALYTICS_ACCOUNT_ENABLED=1
+elif isReleaseCandidateInstance; then
+    PAYMENT_METHOD_MODE=sandbox
+    GOOGLE_ANALYTICS_ACCOUNT="staging-account-id"
+    GOOGLE_ANALYTICS_ACCOUNT_ENABLED=1
+elif isDevelopmentInstance; then
+    PAYMENT_METHOD_MODE=sandbox
+    GOOGLE_ANALYTICS_ACCOUNT="XXXXX"
+    GOOGLE_ANALYTICS_ACCOUNT_ENABLED=0
+else
+    echo "unknown instance type "
+    exit 1
+fi
+
+# configure the instance depening on type
+case $INPUT in
+    ${ARGUMENT_STEP_FINAL}-*)
+        set -xe
+        php bin/magento config:set -- payment/method/mode ${PAYMENT_METHOD_MODE}
+        php bin/magento config:set -- google_analytics/account/id ${GOOGLE_ANALYTICS_ACCOUNT}
+        php bin/magento config:set -- google_analytics/account/enabled ${GOOGLE_ANALYTICS_ACCOUNT_ENABLED}
+
+        if isDevelopmentInstance; then
+            # disable MFA for development instances only
+            php bin/magento config:set twofactorauth/general/enable 0
+        fi
+    ;;
+    *)
+        # do nothing
+    ;;
+esac
