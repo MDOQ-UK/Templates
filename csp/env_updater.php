@@ -1,7 +1,24 @@
 <?php
 
-$config = include 'app/etc/env.php';
+function var_export_short($data)
+{
+    $dump = var_export($data, true);
 
+    $dump = preg_replace('#(?:\A|\n)([ ]*)array \(#i', '[', $dump); // Starts
+    $dump = preg_replace('#\n([ ]*)\),#', "\n$1],", $dump); // Ends
+    $dump = preg_replace('#=> \[\n\s+\],\n#', "=> [],\n", $dump); // Empties
+
+    if (gettype($data) == 'object') { // Deal with object states
+        $dump = str_replace('__set_state(array(', '__set_state([', $dump);
+        $dump = preg_replace('#\)\)$#', "])", $dump);
+    } else { 
+        $dump = preg_replace('#\)$#', "]", $dump);
+    }
+
+    return $dump;
+}
+
+$config = include 'app/etc/env.php';
 if(!isset($config['system'])) {
     $config['system'] = [];
 }
@@ -37,22 +54,19 @@ foreach ($policies as $key => $policyId) {
         'hosts' => $hosts
     ];
 }
-function var_export_short($data)
-{
-    $dump = var_export($data, true);
 
-    $dump = preg_replace('#(?:\A|\n)([ ]*)array \(#i', '[', $dump); // Starts
-    $dump = preg_replace('#\n([ ]*)\),#', "\n$1],", $dump); // Ends
-    $dump = preg_replace('#=> \[\n\s+\],\n#', "=> [],\n", $dump); // Empties
-
-    if (gettype($data) == 'object') { // Deal with object states
-        $dump = str_replace('__set_state(array(', '__set_state([', $dump);
-        $dump = preg_replace('#\)\)$#', "])", $dump);
-    } else { 
-        $dump = preg_replace('#\)$#', "]", $dump);
+if(count($argv) > 1) {
+    $additionalHosts = array_slice($argv, 1);
+    echo 'proccessing additional hosts: '.implode(', ', $additionalHosts).PHP_EOL;
+    foreach ($policies as $key => $policyId) {
+        $k = str_replace('mdoq', 'custom', $key);
+        $config['system']['default']['csp']['policies']['storefront'][$k] = [
+            'policy_id' => $policyId,
+            'hosts' => $additionalHosts
+        ];
     }
-
-    return $dump;
 }
 
 file_put_contents('app/etc/env.php', '<?php'.PHP_EOL.'return ' . var_export_short($config) . ';');
+
+echo 'CSP policies updated in app/etc/env.php'.PHP_EOL;

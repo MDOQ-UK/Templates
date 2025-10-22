@@ -47,3 +47,9 @@ curl -s https://raw.githubusercontent.com/MDOQ-UK/Templates/main/csp/env_updater
 php bin/magento app:config:import
 ```
 This will add the MDOQ domains into `app/etc/env.php`
+If you also want to add the live site into the CSPs you can run
+```bash
+curl -s https://raw.githubusercontent.com/MDOQ-UK/Templates/main/csp/env_updater.php | php -- mysite1.com mysite2.co.uk
+php bin/magento app:config:import
+```
+This will create a rule for both these domains aswell.
