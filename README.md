@@ -18,7 +18,7 @@ To pull in the [MDOQ gitignore template](/gitignore/template) when an instance r
 `curl -s https://raw.githubusercontent.com/MDOQ-UK/Templates/main/gitignore/updater.php | php`
 
 This would make the script look something like:
-``` php
+```bash
 ...
         "$ARGUMENT_STEP_FINAL-$ARGUMENT_COMPARISON_AHEAD")
             set -xe
@@ -37,3 +37,13 @@ This would make the script look something like:
             ;;
 ...
 ```
+
+## CSP Updater
+To not report/block scripts loaded from same website, you can add MDOQ's domains to your CSP whitelist for development.
+You can avoid these changes being taken live by placing them in the env.php
+In your post roll up actions, in the FINAL step add
+```bash
+curl -s https://raw.githubusercontent.com/MDOQ-UK/Templates/main/csp/env_updater.php | php
+php bin/magento app:config:import
+```
+This will add the MDOQ domains into `app/etc/env.php`
